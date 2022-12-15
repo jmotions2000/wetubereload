@@ -1,5 +1,4 @@
 import User from "../models/User";
-import Video from "../models/Video";
 import fetch from "node-fetch";
 import bcrypt from "bcrypt";
 
@@ -133,6 +132,7 @@ export const finishGithubLogin = async (req, res) => {
 
 export const logout = (req, res) => {
   req.session.destroy();
+  req.flash("info", "Buy Buy");
   return res.redirect("/");
 };
 export const getEdit = (req, res) => {
@@ -177,6 +177,7 @@ export const postEdit = async (req, res) => {
 
 export const getChangePassword = (req, res) => {
   if (req.session.user.socialOnly === true) {
+    req.flash("error", "Can't change Password.");
     return res.redirect("/");
   }
   return res.render("users/change-password", { pageTitle: "Change Password" });
@@ -208,6 +209,7 @@ export const postChangePassword = async (req, res) => {
   user.password = newPassword;
   // console.log("New unhased pw", user.password); // 해시되기전의 패스원드
   await user.save();
+  req.flash("info", "Password Updated");
   // console.log("new PW", user.password); //해시된 새 패스워드 보고
 
   // send notification
@@ -216,7 +218,13 @@ export const postChangePassword = async (req, res) => {
 
 export const see = async (req, res) => {
   const { id } = req.params;
-  const user = await User.findById(id).populate("videos");
+  const user = await User.findById(id).populate({
+    path: "videos",
+    populate: {
+      path: "owner",
+      model: "User",
+    },
+  });
   if (!user) {
     return res.status(404).render("404", { pageTitle: "User Not Found." });
   }

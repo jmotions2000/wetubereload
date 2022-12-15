@@ -10,9 +10,9 @@ import {
   postChangePassword,
 } from "../controllers/userController";
 import {
-  avatarUpload,
   protectorMiddleware,
   publicOnlyMiddleware,
+  avatarUpload,
 } from "../middlewares";
 
 const userRouter = express.Router();
