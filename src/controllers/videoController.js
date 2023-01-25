@@ -1,5 +1,7 @@
 import Video from "../models/Video";
+import Comment from "../models/Comment";
 import User from "../models/User";
+import { async } from "regenerator-runtime";
 export const home = async (req, res) => {
   const videos = await Video.find({})
     .sort({ createdAt: "desc" })
@@ -8,7 +10,8 @@ export const home = async (req, res) => {
 };
 export const watch = async (req, res) => {
   const { id } = req.params;
-  const video = await Video.findById(id).populate("owner");
+  const video = await Video.findById(id).populate("owner").populate("comments");
+  // console.log(video); 공부하면서 작성된 콘솔로그
   if (!video) {
     return res.render("404", { pageTitle: "Video not found." });
   }
@@ -51,7 +54,6 @@ export const postEdit = async (req, res) => {
   req.flash("success", "Changes saved.");
   return res.redirect(`/videos/${id}`);
 };
-
 export const getUpload = (req, res) => {
   return res.render("upload", { pageTitle: "Upload Video" });
 };
@@ -118,4 +120,64 @@ export const registerView = async (req, res) => {
   video.meta.views = video.meta.views + 1;
   await video.save();
   return res.sendStatus(200);
+};
+export const createComment = async (req, res) => {
+  const {
+    session: { user },
+    body: { text },
+    params: { id },
+  } = req;
+  const video = await Video.findById(id);
+  if (!video) {
+    return res.sendStatus(404);
+  }
+  const comment = await Comment.create({
+    text,
+    owner: user._id,
+    video: id,
+  });
+  video.comments.push(comment._id);
+  video.save();
+  return res.status(201).json({ newCommentId: comment._id });
+};
+
+// export const deleteComment = async (req, res) => {
+//   const {id} = req.params;
+//   const {user: {_id},} = req.session;
+//   const video = await video.findById(id);
+//   const comments = await video.comments;
+//   const commentId =
+//   if(String(comment))
+//   delete
+// }
+
+export const deleteComment = async (req, res) => {
+  const {
+    params: { id: commentId },
+  } = req;
+  const {
+    session: {
+      user: { _id: userId },
+    },
+  } = req;
+  const comment = await Comment.findById(commentId)
+    .populate("owner")
+    .populate("video");
+  const video = comment.video;
+  const user = await User.findById(userId);
+
+  if (String(userId) !== String(comment.owner._id)) {
+    return res.sendStatus(404);
+  }
+  if (!video) {
+    return res.sendStatus(404);
+  }
+
+  user.comments.splice(user.comments.indexOf(commentId), 1);
+  await user.save();
+  video.comments.splice(video.comments.indexOf(commentId), 1);
+  await video.save();
+  await Comment.findByIdAndRemove(commentId);
+
+  return res.status(200);
 };

@@ -1,5 +1,5 @@
 {
-  "name": "wetube",
+  "name": "wetubereload",
   "version": "1.0.0",
   "description": "The best way to watch videos",
   "repository": {
@@ -7,8 +7,12 @@
     "url": "git+https://github.com/jmotions2000/wetubereload.git"
   },
   "scripts": {
+    "start":"node build/init.js",
+    "build":"npm run build:server && npm run build:assets",
+    "build:server": "babel src -d build",
+    "build:assets": "webpack --mode=production",
     "dev:server": "nodemon",
-    "dev:assets": "webpack"
+    "dev:assets": "webpack --mode=development -w"
   },
   "author": "Chonghyo, Rhee",
   "license": "MIT",
@@ -33,8 +37,10 @@
     "regenerator-runtime": "^0.13.11"
   },
   "devDependencies": {
-    "@babel/core": "^7.18.10",
+    "@babel/cli": "^7.20.7",
+    "@babel/core": "^7.20.12",
     "@babel/node": "^7.18.10",
+    "@babel/parser": "^7.20.5",
     "@babel/preset-env": "^7.18.10",
     "acorn": "^8.8.1",
     "babel-loader": "^8.3.0",

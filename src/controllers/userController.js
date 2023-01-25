@@ -1,7 +1,6 @@
 import User from "../models/User";
 import fetch from "node-fetch";
 import bcrypt from "bcrypt";
-
 export const getJoin = (req, res) => res.render("join", { pageTitle: "Join" });
 export const postJoin = async (req, res) => {
   const { name, username, email, password, password2, location } = req.body;
@@ -37,7 +36,6 @@ export const postJoin = async (req, res) => {
 };
 export const getLogin = (req, res) =>
   res.render("login", { pageTitle: "Login" });
-
 export const postLogin = async (req, res) => {
   const { username, password } = req.body;
   const pageTitle = "Login";
@@ -108,6 +106,7 @@ export const finishGithubLogin = async (req, res) => {
       (email) => email.primary === true && email.verified === true
     );
     if (!emailObj) {
+      // set notification
       return res.redirect("/login");
     }
     let user = await User.findOne({ email: emailObj.email });
@@ -131,8 +130,11 @@ export const finishGithubLogin = async (req, res) => {
 };
 
 export const logout = (req, res) => {
+  // 에러 났었는데 니코쌤 답변으로 확인함 - 와우 나 이제 할 수 있어
+  // req.session.isLoggedIn = false;
+  req.flash("info", "Bye Bye");
   req.session.destroy();
-  req.flash("info", "Buy Buy");
+
   return res.redirect("/");
 };
 export const getEdit = (req, res) => {
@@ -146,20 +148,6 @@ export const postEdit = async (req, res) => {
     body: { name, email, username, location },
     file,
   } = req;
-
-  // 아래는 확인하는거
-  const existsData = await User.exists({
-    _id: { $ne: { _id } }, //check this
-    $or: [{ username }, { email }],
-  });
-
-  if (existsData) {
-    return res.status(400).render("edit-profile", {
-      pageTitle: "Edit Profile",
-      errorMessage: "This username/email is already taken.",
-    });
-  }
-
   const updatedUser = await User.findByIdAndUpdate(
     _id,
     {
@@ -177,12 +165,11 @@ export const postEdit = async (req, res) => {
 
 export const getChangePassword = (req, res) => {
   if (req.session.user.socialOnly === true) {
-    req.flash("error", "Can't change Password.");
+    req.flash("error", "Can't change password.");
     return res.redirect("/");
   }
   return res.render("users/change-password", { pageTitle: "Change Password" });
 };
-
 export const postChangePassword = async (req, res) => {
   const {
     session: {
@@ -201,18 +188,12 @@ export const postChangePassword = async (req, res) => {
   if (newPassword !== newPasswordConfirmation) {
     return res.status(400).render("users/change-password", {
       pageTitle: "Change Password",
-      errorMessage: "The pw does not match the confirmation",
+      errorMessage: "The password does not match the confirmation",
     });
   }
-
-  // console.log("OLd", user.password); // 이전 패스워드 보고
   user.password = newPassword;
-  // console.log("New unhased pw", user.password); // 해시되기전의 패스원드
   await user.save();
-  req.flash("info", "Password Updated");
-  // console.log("new PW", user.password); //해시된 새 패스워드 보고
-
-  // send notification
+  req.flash("info", "Password updated");
   return res.redirect("/users/logout");
 };
 
@@ -226,7 +207,7 @@ export const see = async (req, res) => {
     },
   });
   if (!user) {
-    return res.status(404).render("404", { pageTitle: "User Not Found." });
+    return res.status(404).render("404", { pageTitle: "User not found." });
   }
   return res.render("users/profile", {
     pageTitle: user.name,
