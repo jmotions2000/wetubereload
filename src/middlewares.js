@@ -8,10 +8,16 @@ const s3 = new aws.S3({
   secretAccessKey: process.env.AWS_SECRET,
   //credentials 를 사용하지 않고 region 사용
 });
+const isHeroku = process.env.NODE_ENV === "production";
 
-const multerUploader = multerS3({
+const s3ImageUploader = multerS3({
   s3: s3,
-  bucket: "wetubereloaded",
+  bucket: "wetubereloaded/images",
+  acl: "public-read",
+});
+const s3VideoUploader = multerS3({
+  s3: s3,
+  bucket: "wetubereloaded/videos",
   acl: "public-read",
 });
 export const localsMiddleware = (req, res, next) => {
@@ -41,12 +47,12 @@ export const avatarUpload = multer({
   limits: {
     fileSize: 3000000,
   },
-  storage: multerUploader,
+  storage: isHeroku ? s3ImageUploader : undefined,
 });
 export const videoUpload = multer({
   dest: "uploads/videos/",
   limits: {
     fileSize: 10000000,
   },
-  storage: multerUploader,
+  storage: isHeroku ? s3VideoUploader : undefined,
 });
